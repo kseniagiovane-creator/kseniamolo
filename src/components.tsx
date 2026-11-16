@@ -13,7 +13,7 @@ export function Photo({ src, alt, className = '' }: { src: string; alt: string; 
   if (failed) {
     return (
       <div className={`photo photo--empty ${className}`} role="img" aria-label={alt}>
-        <span>images/{src}</span>
+        <span>Фото скоро появится</span>
       </div>
     )
   }
@@ -52,7 +52,7 @@ function Video({ src, label, className, onError }: { src: string; label: string;
       muted
       loop
       playsInline
-      preload="metadata"
+      preload="none"
       onError={onError}
     />
   )
@@ -60,25 +60,36 @@ function Video({ src, label, className, onError }: { src: string; label: string;
 
 export function Slider({ slides, label }: { slides: ReactNode[]; label: string }) {
   const [index, setIndex] = useState(0)
-  const [touchX, setTouchX] = useState<number | null>(null)
+  const [touch, setTouch] = useState<{ x: number; y: number } | null>(null)
+  const [drag, setDrag] = useState(0)
   const go = (next: number) => setIndex((next + slides.length) % slides.length)
 
-  // Свайп пальцем на телефоне: больше 40px — листаем
-  const onTouchEnd = (x: number) => {
-    if (touchX === null) return
-    const dx = x - touchX
-    if (Math.abs(dx) > 40) go(index + (dx < 0 ? 1 : -1))
-    setTouchX(null)
+  // Свайп пальцем на телефоне: слайд едет за пальцем, больше 40px — листаем
+  const onTouchMove = (x: number, y: number) => {
+    if (!touch) return
+    const dx = x - touch.x
+    if (Math.abs(dx) > Math.abs(y - touch.y)) setDrag(dx)
+  }
+
+  const onTouchEnd = () => {
+    if (Math.abs(drag) > 40) go(index + (drag < 0 ? 1 : -1))
+    setTouch(null)
+    setDrag(0)
   }
 
   return (
     <div className="slider" aria-roledescription="carousel" aria-label={label}>
       <div
         className="slider__viewport"
-        onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
-        onTouchEnd={(e) => onTouchEnd(e.changedTouches[0].clientX)}
+        onTouchStart={(e) => setTouch({ x: e.touches[0].clientX, y: e.touches[0].clientY })}
+        onTouchMove={(e) => onTouchMove(e.touches[0].clientX, e.touches[0].clientY)}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
       >
-        <div className="slider__track" style={{ transform: `translateX(-${index * 100}%)` }}>
+        <div
+          className={`slider__track ${drag ? 'is-dragging' : ''}`}
+          style={{ transform: `translateX(calc(-${index * 100}% + ${drag}px))` }}
+        >
           {slides.map((slide, i) => (
             <div className="slider__slide" key={i} aria-hidden={i !== index}>
               {slide}
@@ -114,11 +125,23 @@ function Chevron() {
   )
 }
 
-export function Check() {
+const icons = {
+  dumbbell: 'M3.5 9.5h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1zM20.5 9.5h-1a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1zM7.5 6.5h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zM15.5 6.5h1a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zM9.5 12h5',
+  play: 'M4.5 4.5h15a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 15V6a1.5 1.5 0 0 1 1.5-1.5zM10 8l5 2.5-5 2.5zM12 16.5v3M8.5 19.5h7',
+  calendar: 'M5.5 5.5h13a1.5 1.5 0 0 1 1.5 1.5v11.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5V7a1.5 1.5 0 0 1 1.5-1.5zM4 10h16M8.5 3.5v4M15.5 3.5v4M8.5 13h.01M12 13h.01M15.5 13h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01',
+  stopwatch: 'M12 20.5a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM12 10.5v3.5M9.5 3h5',
+  person: 'M12 4.5h.01M5.5 9l6.5 2 6.5-2M12 11v4M12 15l-3 5M12 15l3 5',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  triangle: 'M8 5.5v13l11-6.5z',
+}
+
+export type IconName = keyof typeof icons
+
+/** Линейные иконки в едином стиле: тонкая линия, цвет — от текста */
+export function Icon({ name, className = '' }: { name: IconName; className?: string }) {
   return (
-    <svg className="check" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
-      <circle cx="12" cy="12" r="12" fill="currentColor" />
-      <path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg className={`icon ${className}`} viewBox="0 0 24 24" aria-hidden="true">
+      <path d={icons[name]} />
     </svg>
   )
 }
