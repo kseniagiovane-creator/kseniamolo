@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Icon, Photo, Slider } from './components'
 
 const nav = [
@@ -111,7 +111,8 @@ const LECTURE_VIDEO_ID = 'cgBJgfPR7Lg'
 // Подписи «что изменилось» на фото «После». Координаты в долях плитки 1:2:
 // x — от 0 до 100 по ширине, y — от 0 до 200 по высоте. text — подпись,
 // path — стрелка (head: false — без наконечника), shift — на сколько px сдвинуть табличку дальше от края
-type Note = { text?: string; x?: number; y?: number; shift?: number; path?: string; head?: boolean }
+// mobilePath — своя стрелка для телефона, если табличка там стоит по-другому
+type Note = { text?: string; x?: number; y?: number; shift?: number; path?: string; mobilePath?: string; head?: boolean }
 
 const resultNotes: Record<number, Note[]> = {
   1: [
@@ -147,7 +148,7 @@ const resultNotes: Record<number, Note[]> = {
   6: [
     { text: 'Расправились плечи', x: 2, y: 22, path: 'M14 38 Q16 46 27 49' },
     { text: 'Улучшилась осанка', x: 66, y: 14, path: 'M76 30 Q72 37 58 40' },
-    { text: 'Подкачалась спина', x: 66, y: 60, shift: 30, path: 'M84 68 Q72 66 60 68' },
+    { text: 'Подкачалась спина', x: 66, y: 60, shift: 30, path: 'M84 68 Q72 66 60 68', mobilePath: 'M82 86 Q70 82 60 69' },
   ],
 }
 
@@ -162,12 +163,16 @@ function ResultNotes({ id, notes }: { id: number; notes: Note[] }) {
         </defs>
         {notes
           .filter((n) => n.path)
-          .map((n) => (
-            <path
-              key={n.path}
-              d={n.path}
-              markerEnd={n.head === false ? undefined : `url(#head-${id})`}
-            />
+          .flatMap((n): { d: string; n: Note; cls?: string }[] =>
+            n.mobilePath
+              ? [
+                  { d: n.path!, n, cls: 'is-desktop' },
+                  { d: n.mobilePath, n, cls: 'is-mobile' },
+                ]
+              : [{ d: n.path!, n }],
+          )
+          .map(({ d, n, cls }) => (
+            <path key={d} d={d} className={cls} markerEnd={n.head === false ? undefined : `url(#head-${id})`} />
           ))}
       </svg>
       {notes
@@ -177,7 +182,7 @@ function ResultNotes({ id, notes }: { id: number; notes: Note[] }) {
             key={n.text}
             // Таблички чуть выходят за край фото — подальше от человека
             className={`result__note result__note--${(n.x ?? 0) > 50 ? 'right' : 'left'}`}
-            style={{ top: `${(n.y ?? 0) / 2}%`, translate: n.shift ? `${(n.x ?? 0) > 50 ? n.shift : -n.shift}px 0` : undefined }}
+            style={{ top: `${(n.y ?? 0) / 2}%`, '--shift': n.shift ? `${(n.x ?? 0) > 50 ? n.shift : -n.shift}px` : undefined } as CSSProperties}
           >
             {n.text}
           </span>

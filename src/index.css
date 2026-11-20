@@ -888,6 +888,10 @@ summary {
   pointer-events: none;
 }
 
+.result__arrows .is-mobile {
+  display: none;
+}
+
 .result__arrows marker path {
   fill: none;
   stroke: var(--ink);
@@ -914,6 +918,11 @@ summary {
 }
 
 /* Таблички прижаты к краям фото и чуть выходят за них */
+/* --shift — дополнительный сдвиг таблички от человека (задаётся в App.tsx) */
+.result__note {
+  translate: var(--shift, 0) 0;
+}
+
 .result__note--left {
   left: -14px;
 }
@@ -1381,6 +1390,19 @@ summary {
     border-width: 1px;
     border-radius: 6px;
     font-size: 9px;
+  }
+
+  /* На телефоне места справа нет: вместо сдвига вбок табличка опускается ниже */
+  .result__note[style*='--shift'] {
+    translate: 0 40px;
+  }
+
+  .result__arrows .is-mobile {
+    display: inline;
+  }
+
+  .result__arrows .is-desktop {
+    display: none;
   }
 
   .result__note--left {
